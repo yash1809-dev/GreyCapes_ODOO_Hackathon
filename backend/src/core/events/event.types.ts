@@ -14,12 +14,14 @@ export enum DomainEvent {
   // Vehicle Events
   VEHICLE_CREATED = 'vehicle.created',
   VEHICLE_UPDATED = 'vehicle.updated',
+  VEHICLE_DELETED = 'vehicle.deleted',
   VEHICLE_STATUS_CHANGED = 'vehicle.status_changed',
   VEHICLE_RETIRED = 'vehicle.retired',
 
   // Driver Events
   DRIVER_CREATED = 'driver.created',
   DRIVER_UPDATED = 'driver.updated',
+  DRIVER_DELETED = 'driver.deleted',
   DRIVER_STATUS_CHANGED = 'driver.status_changed',
   DRIVER_LICENSE_EXPIRING = 'driver.license_expiring',
 

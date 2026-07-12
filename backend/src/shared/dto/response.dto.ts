@@ -30,13 +30,25 @@ export interface PaginatedResponse<T> {
 }
 
 export class ResponseBuilder {
-  static success<T>(data: T, meta?: any): ApiResponse<T> {
+  static success<T>(data: T, message?: string, pagination?: any): ApiResponse<T> | PaginatedResponse<any> {
+    if (pagination) {
+      return {
+        success: true,
+        data: data as any,
+        pagination: {
+          ...pagination,
+          hasNext: pagination.page < pagination.totalPages,
+          hasPrev: pagination.page > 1
+        }
+      };
+    }
+    
     return {
       success: true,
       data,
       meta: {
         timestamp: new Date().toISOString(),
-        ...meta
+        ...(message && { message })
       }
     };
   }

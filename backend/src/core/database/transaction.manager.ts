@@ -35,4 +35,14 @@ export class TransactionManager {
       throw error;
     }
   }
+
+  /**
+   * Instance method wrapper for execute
+   */
+  async executeInTransaction<T>(
+    callback: (tx: PrismaClient) => Promise<T>,
+    context?: string
+  ): Promise<T> {
+    return TransactionManager.execute(callback, context);
+  }
 }

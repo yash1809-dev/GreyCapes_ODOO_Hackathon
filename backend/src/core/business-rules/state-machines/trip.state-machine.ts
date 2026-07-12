@@ -1,7 +1,7 @@
 import { TripStatus } from '@prisma/client';
 import { ConflictError } from '../../errors/app.errors';
 
-const tripStateMachine: Record<TripStatus, TripStatus[]> = {
+const tripStateTransitions: Record<TripStatus, TripStatus[]> = {
   [TripStatus.DRAFT]: [
     TripStatus.DISPATCHED,
     TripStatus.CANCELLED
@@ -23,7 +23,7 @@ export class TripStateMachine {
    * Check if transition is valid
    */
   static canTransition(from: TripStatus, to: TripStatus): boolean {
-    return tripStateMachine[from]?.includes(to) ?? false;
+    return tripStateTransitions[from]?.includes(to) ?? false;
   }
 
   /**
@@ -33,7 +33,7 @@ export class TripStateMachine {
     if (!this.canTransition(from, to)) {
       throw new ConflictError(
         `Cannot transition trip from ${from} to ${to}. ` +
-        `Valid transitions from ${from}: ${tripStateMachine[from].join(', ')}`
+        `Valid transitions from ${from}: ${tripStateTransitions[from].join(', ')}`
       );
     }
   }
@@ -42,7 +42,7 @@ export class TripStateMachine {
    * Get all valid transitions from current state
    */
   static getValidTransitions(from: TripStatus): TripStatus[] {
-    return tripStateMachine[from] || [];
+    return tripStateTransitions[from] || [];
   }
 
   /**
@@ -52,3 +52,5 @@ export class TripStateMachine {
     return status === TripStatus.COMPLETED || status === TripStatus.CANCELLED;
   }
 }
+
+export const tripStateMachine = TripStateMachine;

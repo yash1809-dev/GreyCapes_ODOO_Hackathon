@@ -1,7 +1,7 @@
 import { VehicleStatus } from '@prisma/client';
 import { ConflictError } from '../../errors/app.errors';
 
-const vehicleStateMachine: Record<VehicleStatus, VehicleStatus[]> = {
+const vehicleStateTransitions: Record<VehicleStatus, VehicleStatus[]> = {
   [VehicleStatus.AVAILABLE]: [
     VehicleStatus.ON_TRIP,
     VehicleStatus.IN_MAINTENANCE,
@@ -22,7 +22,7 @@ export class VehicleStateMachine {
    * Check if transition is valid
    */
   static canTransition(from: VehicleStatus, to: VehicleStatus): boolean {
-    return vehicleStateMachine[from]?.includes(to) ?? false;
+    return vehicleStateTransitions[from]?.includes(to) ?? false;
   }
 
   /**
@@ -33,7 +33,7 @@ export class VehicleStateMachine {
     if (!this.canTransition(from, to)) {
       throw new ConflictError(
         `Cannot transition vehicle from ${from} to ${to}. ` +
-        `Valid transitions from ${from}: ${vehicleStateMachine[from].join(', ')}`
+        `Valid transitions from ${from}: ${vehicleStateTransitions[from].join(', ')}`
       );
     }
   }
@@ -42,6 +42,8 @@ export class VehicleStateMachine {
    * Get all valid transitions from current state
    */
   static getValidTransitions(from: VehicleStatus): VehicleStatus[] {
-    return vehicleStateMachine[from] || [];
+    return vehicleStateTransitions[from] || [];
   }
 }
+
+export const vehicleStateMachine = VehicleStateMachine;

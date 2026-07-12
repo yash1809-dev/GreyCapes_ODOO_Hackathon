@@ -5,6 +5,10 @@ import rateLimit from 'express-rate-limit';
 import { errorHandler } from './core/errors/error.handler';
 import { logger } from './core/logger/logger.service';
 import authRoutes from './modules/auth/auth.routes';
+import vehicleRoutes from './modules/vehicles/vehicles.routes';
+import driverRoutes from './modules/drivers/drivers.routes';
+import tripRoutes from './modules/trips/trips.routes';
+import analyticsRoutes from './modules/analytics/analytics.routes';
 
 export function createApp(): Application {
   const app = express();
@@ -100,6 +104,10 @@ export function createApp(): Application {
   // ============================================
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/vehicles', vehicleRoutes);
+  app.use('/api/drivers', driverRoutes);
+  app.use('/api/trips', tripRoutes);
+  app.use('/api/analytics', analyticsRoutes);
 
   // Root endpoint
   app.get('/', (req: Request, res: Response) => {
