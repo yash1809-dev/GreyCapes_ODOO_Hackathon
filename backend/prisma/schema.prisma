@@ -1,0 +1,385 @@
+// TransitOps Database Schema
+// Enterprise-grade Transport Operations ERP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// IDENTITY & ACCESS MODULE
+// ============================================
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  resource    String  // 'vehicles', 'trips', 'drivers', etc.
+  action      String  // 'create', 'read', 'update', 'delete', 'dispatch', etc.
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  roleId       String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  role          Role           @relation(fields: [roleId], references: [id])
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  createdTrips  Trip[]
+
+  @@index([email])
+  @@index([roleId])
+  @@map("users")
+}
+
+// ============================================
+// FLEET MODULE
+// ============================================
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_MAINTENANCE
+  RETIRED
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  CNG
+}
+
+model VehicleType {
+  id              String  @id @default(uuid())
+  name            String  @unique
+  description     String?
+  defaultCapacity Int // in kg
+  fuelType        FuelType
+
+  vehicles Vehicle[]
+
+  @@map("vehicle_types")
+}
+
+model Region {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  vehicles Vehicle[]
+  trips    Trip[]
+
+  @@map("regions")
+}
+
+model Vehicle {
+  id                 String        @id @default(uuid())
+  registrationNumber String        @unique
+  vehicleTypeId      String
+  regionId           String
+  status             VehicleStatus @default(AVAILABLE)
+  purchaseDate       DateTime
+  currentOdometer    Int           @default(0)
+  lastMaintenanceDate DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  deletedAt          DateTime?
+
+  vehicleType     VehicleType       @relation(fields: [vehicleTypeId], references: [id])
+  region          Region            @relation(fields: [regionId], references: [id])
+  trips           Trip[]
+  maintenanceLogs MaintenanceLog[]
+  fuelLogs        FuelLog[]
+
+  @@index([status])
+  @@index([regionId])
+  @@index([vehicleTypeId])
+  @@map("vehicles")
+}
+
+// ============================================
+// DRIVER MODULE
+// ============================================
+
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  ON_LEAVE
+  SUSPENDED
+  INACTIVE
+}
+
+model Driver {
+  id            String       @id @default(uuid())
+  userId        String?      @unique
+  fullName      String
+  licenseNumber String       @unique
+  licenseExpiry DateTime
+  phone         String
+  status        DriverStatus @default(AVAILABLE)
+  hireDate      DateTime
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  trips Trip[]
+
+  @@index([status])
+  @@index([licenseExpiry])
+  @@map("drivers")
+}
+
+// ============================================
+// TRIP MODULE
+// ============================================
+
+enum TripStatus {
+  DRAFT
+  DISPATCHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Trip {
+  id             String     @id @default(uuid())
+  tripNumber     String     @unique
+  vehicleId      String
+  driverId       String
+  regionId       String?
+  origin         String
+  destination    String
+  scheduledStart DateTime
+  actualStart    DateTime?
+  scheduledEnd   DateTime?
+  actualEnd      DateTime?
+  status         TripStatus @default(DRAFT)
+  distanceKm     Int?
+  cargoWeight    Int? // in kg
+  notes          String?
+  createdBy      String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  vehicle     Vehicle        @relation(fields: [vehicleId], references: [id])
+  driver      Driver         @relation(fields: [driverId], references: [id])
+  region      Region?        @relation(fields: [regionId], references: [id])
+  creator     User           @relation(fields: [createdBy], references: [id])
+  history     TripHistory[]
+  fuelLogs    FuelLog[]
+  expenses    Expense[]
+
+  @@index([status])
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([scheduledStart])
+  @@map("trips")
+}
+
+model TripHistory {
+  id        String   @id @default(uuid())
+  tripId    String
+  status    TripStatus
+  changedBy String
+  changedAt DateTime @default(now())
+  notes     String?
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_history")
+}
+
+// ============================================
+// MAINTENANCE MODULE
+// ============================================
+
+enum MaintenanceType {
+  ROUTINE
+  REPAIR
+  INSPECTION
+  EMERGENCY
+}
+
+model MaintenanceLog {
+  id              String          @id @default(uuid())
+  vehicleId       String
+  maintenanceType MaintenanceType
+  description     String
+  cost            Float
+  odometerReading Int
+  performedBy     String
+  performedAt     DateTime
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  vehicle  Vehicle               @relation(fields: [vehicleId], references: [id])
+  expenses MaintenanceExpense[]
+
+  @@index([vehicleId])
+  @@index([performedAt])
+  @@map("maintenance_logs")
+}
+
+model MaintenanceExpense {
+  id                String   @id @default(uuid())
+  maintenanceLogId  String
+  category          String
+  amount            Float
+  invoiceNumber     String?
+  vendor            String?
+  createdAt         DateTime @default(now())
+
+  maintenanceLog MaintenanceLog @relation(fields: [maintenanceLogId], references: [id], onDelete: Cascade)
+
+  @@index([maintenanceLogId])
+  @@map("maintenance_expenses")
+}
+
+// ============================================
+// FINANCE MODULE
+// ============================================
+
+model FuelLog {
+  id              String   @id @default(uuid())
+  vehicleId       String
+  tripId          String?
+  fuelType        FuelType
+  quantityLiters  Float
+  costPerLiter    Float
+  totalCost       Float
+  odometerReading Int
+  stationName     String?
+  filledBy        String
+  filledAt        DateTime
+  createdAt       DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  trip    Trip?   @relation(fields: [tripId], references: [id])
+
+  @@index([vehicleId])
+  @@index([tripId])
+  @@index([filledAt])
+  @@map("fuel_logs")
+}
+
+enum ExpenseCategory {
+  FUEL
+  MAINTENANCE
+  TOLL
+  PARKING
+  INSURANCE
+  DRIVER_ALLOWANCE
+  OTHER
+}
+
+model Expense {
+  id                 String          @id @default(uuid())
+  category           ExpenseCategory
+  amount             Float
+  description        String
+  expenseDate        DateTime
+  relatedEntityType  String? // 'trip', 'vehicle', 'maintenance', etc.
+  relatedEntityId    String?
+  createdBy          String
+  createdAt          DateTime        @default(now())
+
+  trip Trip? @relation(fields: [relatedEntityId], references: [id])
+
+  @@index([category])
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+// ============================================
+// SYSTEM MODULE
+// ============================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String // 'CREATE', 'UPDATE', 'DELETE', 'DISPATCH', etc.
+  resource   String // 'trip', 'vehicle', 'driver', etc.
+  resourceId String
+  oldValue   String? // JSON
+  newValue   String? // JSON
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+model Notification {
+  id                  String           @id @default(uuid())
+  userId              String
+  type                NotificationType @default(INFO)
+  title               String
+  message             String
+  isRead              Boolean          @default(false)
+  relatedResourceType String?
+  relatedResourceId   String?
+  createdAt           DateTime         @default(now())
+  readAt              DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
