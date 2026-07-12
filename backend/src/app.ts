@@ -9,6 +9,9 @@ import vehicleRoutes from './modules/vehicles/vehicles.routes';
 import driverRoutes from './modules/drivers/drivers.routes';
 import tripRoutes from './modules/trips/trips.routes';
 import analyticsRoutes from './modules/analytics/analytics.routes';
+import maintenanceRoutes from './modules/maintenance/maintenance.routes';
+import fuelRoutes from './modules/fuel/fuel.routes';
+import expensesRoutes from './modules/expenses/expenses.routes';
 
 export function createApp(): Application {
   const app = express();
@@ -108,6 +111,9 @@ export function createApp(): Application {
   app.use('/api/drivers', driverRoutes);
   app.use('/api/trips', tripRoutes);
   app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/maintenance', maintenanceRoutes);
+  app.use('/api/fuel', fuelRoutes);
+  app.use('/api/expenses', expensesRoutes);
 
   // Root endpoint
   app.get('/', (req: Request, res: Response) => {
