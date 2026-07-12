@@ -56,7 +56,7 @@ export function createApp(): Application {
   // General rate limiter
   const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 500, // limit each IP to 500 requests per windowMs
     message: 'Too many requests from this IP, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
@@ -65,7 +65,7 @@ export function createApp(): Application {
   // Strict limiter for auth endpoints
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 50,
     message: 'Too many login attempts, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
