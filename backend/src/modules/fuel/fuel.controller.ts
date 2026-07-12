@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { FuelService } from './fuel.service';
-import { PrismaService } from '../../core/database/prisma.service';
+import { prisma } from '../../core/database/prisma.service';
 
-const prisma = new PrismaService();
 const fuelService = new FuelService(prisma);
 
 export const fuelController = {

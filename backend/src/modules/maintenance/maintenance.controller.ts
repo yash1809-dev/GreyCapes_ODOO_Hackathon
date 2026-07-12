@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { MaintenanceService } from './maintenance.service';
-import { PrismaService } from '../../core/database/prisma.service';
+import { prisma } from '../../core/database/prisma.service';
 
-const prisma = new PrismaService();
 const maintenanceService = new MaintenanceService(prisma);
 
 export const maintenanceController = {
