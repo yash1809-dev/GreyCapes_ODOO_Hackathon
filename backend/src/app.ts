@@ -58,7 +58,7 @@ export function createApp(): Application {
   // Strict limiter for auth endpoints
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 50, // Increased from 5 to 50 for development
+    max: 5,
     message: 'Too many login attempts, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
